@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Test Completo - Organización del Estado</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; overscroll-behavior-y: none; }
+        .option-btn { transition: all 0.15s ease; border-width: 2px; border-color: #e5e7eb; }
+        .option-btn:active:not(:disabled) { transform: scale(0.98); }
+        .correct-ans { background-color: #22c55e !important; color: white !important; border-color: #16a34a !important; }
+        .wrong-ans { background-color: #ef4444 !important; color: white !important; border-color: #dc2626 !important; }
+        .disabled { opacity: 0.8; cursor: not-allowed; pointer-events: none; }
+    </style>
+</head>
+<body class="h-screen w-full overflow-hidden text-gray-800 flex justify-center bg-gray-100">
+
+    <div class="w-full max-w-md h-full bg-white flex flex-col relative shadow-2xl">
+        
+        <!-- PANTALLA INICIO -->
+        <div id="start-screen" class="flex flex-col h-full items-center justify-center p-6 text-center">
+            <div class="bg-blue-600 text-white p-4 rounded-full mb-6 shadow-xl">
+                <svg class="w-14 h-14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            </div>
+            <h1 class="text-3xl font-extrabold text-gray-900 mb-2 leading-tight">Examen Oficial<br>Organización del Estado</h1>
+            <p class="text-gray-500 mb-8 px-4 text-sm">Se seleccionarán 50 preguntas aleatorias de las 175 totales. Necesitas más de 25 aciertos para ser APTO.</p>
+            
+            <button onclick="startExam()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-2xl shadow-lg text-lg transition duration-300">
+                Iniciar Examen
+            </button>
+        </div>
+
+        <!-- PANTALLA EXAMEN -->
+        <div id="exam-screen" class="hidden flex-col h-full bg-gray-50">
+            <header class="bg-white px-5 py-4 shadow-sm border-b border-gray-200 flex justify-between items-center shrink-0 z-10">
+                <div class="font-bold text-gray-700" id="q-counter">1/50</div>
+                <div class="flex gap-3 text-sm font-bold bg-gray-100 py-1.5 px-3 rounded-xl border border-gray-200">
+                    <span class="text-green-600 flex items-center gap-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg> <span id="score-c">0</span></span>
+                    <span class="text-red-500 flex items-center gap-1"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg> <span id="score-w">0</span></span>
+                </div>
+            </header>
+
+            <main class="flex-1 overflow-y-auto p-5 pb-28">
+                <h2 id="q-text" class="text-lg font-bold text-gray-800 leading-snug mb-6 bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                    <!-- Pregunta -->
+                </h2>
+                <div id="options-box" class="flex flex-col gap-3">
+                    <!-- Botones -->
+                </div>
+            </main>
+
+            <footer class="absolute bottom-0 w-full p-4 bg-white/90 backdrop-blur-sm border-t border-gray-200 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)]">
+                <button id="next-btn" onclick="nextQ()" disabled class="w-full bg-gray-200 text-gray-400 font-bold py-4 px-6 rounded-2xl text-lg transition duration-200">
+                    Siguiente
+                </button>
+            </footer>
+        </div>
+
+        <!-- PANTALLA RESULTADOS -->
+        <div id="result-screen" class="hidden flex-col h-full items-center justify-center p-6 text-center bg-gray-50">
+            <div id="res-icon" class="mb-4"></div>
+            <h1 id="res-title" class="text-5xl font-black mb-1 tracking-tight"></h1>
+            <p id="res-msg" class="text-gray-600 mb-8 font-medium"></p>
+            
+            <div class="grid grid-cols-2 gap-4 w-full mb-8">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                    <div class="text-4xl font-black text-green-500 mb-1" id="res-c"></div>
+                    <div class="text-xs text-gray-400 uppercase font-bold tracking-widest">Aciertos</div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                    <div class="text-4xl font-black text-red-500 mb-1" id="res-w"></div>
+                    <div class="text-xs text-gray-400 uppercase font-bold tracking-widest">Fallos</div>
+                </div>
+            </div>
+            
+            <button onclick="startExam()" class="w-full bg-gray-900 hover:bg-black text-white font-bold py-4 px-6 rounded-2xl shadow-lg text-lg transition duration-300">
+                Repetir Examen
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Array compacto: [ "Pregunta", ["Opción 0", "Opción 1", "Opción 2", "Opción 3"], ÍndiceCorrecto ]
+        const DB = [
+            ["1. ¿En qué fecha fue aprobada la Constitución Española por las Cortes Generales?", ["6 de diciembre de 1978", "31 de octubre de 1978", "29 de diciembre de 1978", "27 de diciembre de 1978"], 1],
+            ["2. ¿En qué fecha fue ratificada la Constitución Española en referéndum por el pueblo español?", ["31 de octubre de 1978", "29 de diciembre de 1978", "6 de diciembre de 1978", "27 de diciembre de 1978"], 2],
+            ["3. ¿Cuándo fue publicada la Constitución Española en el Boletín Oficial del Estado (BOE) y entró en vigor?", ["El 29 de diciembre de 1978", "El 6 de diciembre de 1978", "El 1 de enero de 1979", "El 31 de diciembre de 1978"], 0],
+            ["4. Según el artículo 1.1 de la CE, ¿cuál de los siguientes NO es uno de los valores superiores del ordenamiento jurídico?", ["La libertad", "La justicia", "La eficiencia económica", "El pluralismo político"], 2],
+            ["5. ¿Cuántos artículos integran el texto de la Constitución Española de 1978?", ["150 artículos", "169 artículos", "175 artículos", "180 artículos"], 1],
+            ["6. ¿Cómo se estructura formalmente el cuerpo de la Constitución Española?", ["Preámbulo, Título Preliminar y 10 Títulos numerados", "Preámbulo y 12 Títulos numerados", "Título Preliminar y 9 Títulos numerados", "Introducción, 10 Títulos y Disposiciones finales"], 0],
+            ["7. ¿Cuántas Disposiciones Adicionales contiene la Constitución Española de 1978?", ["1", "4", "9", "2"], 1],
+            ["8. ¿Cuántas Disposiciones Transitorias tiene la Constitución Española?", ["4", "1", "9", "6"], 2],
+            ["9. ¿Qué disposición de la CE se encarga de derogar expresamente todas las normas previas que se opongan a ella?", ["La Disposición Final", "La Disposición Transitoria Única", "La Disposición Derogatoria", "La Disposición Adicional Cuarta"], 2],
+            ["10. ¿Cuál es la forma política del Estado español según el artículo 1.3 de la CE?", ["Monarquía parlamentaria", "República presidencialista", "Monarquía absoluta", "Estado federal constitucional"], 0],
+            ["11. ¿En qué Título de la Constitución se regulan la Corona y la sucesión al trono?", ["Título I", "Título II", "Título III", "Título IV"], 1],
+            ["12. Según la CE, la persona del Rey es:", ["Inviolable y sujeta a responsabilidad política", "Inviolable y no sujeta a responsabilidad", "Responsable ante las Cortes Generales", "Inviolable únicamente en el ejercicio de sus funciones privadas"], 1],
+            ["13. Los actos del Rey carecen de validez sin el correspondiente refrendo, excepto:", ["El nombramiento del Presidente del Gobierno", "La convocatoria de elecciones", "El nombramiento y relevo libre de los miembros civiles y militares de su Casa", "La sanción de las leyes"], 2],
+            ["14. En la sucesión a la Corona española, ¿qué principio de preferencia se aplica dentro del mismo grado parentesco?", ["Preferencia de la mujer sobre el varón", "Preferencia de la persona con mayor formación académica", "Preferencia del varón sobre la mujer", "Sin preferencia de sexo, solo de edad"], 2],
+            ["15. ¿Cuál es la institución encargada de velar por que las leyes no vulneren la Carta Magna?", ["El Tribunal Supremo", "El Consejo de Estado", "El Tribunal Constitucional", "El Consejo General del Poder Judicial"], 2],
+            ["16. ¿Cuántos miembros componen el Tribunal Constitucional?", ["10 miembros", "12 miembros", "20 miembros", "15 miembros"], 1],
+            ["17. ¿Por qué período son elegidos los magistrados del Tribunal Constitucional?", ["Por 5 años", "Por 4 años", "Por 9 años", "Por carácter vitalicio"], 2],
+            ["18. ¿Cómo se renuevan los miembros del Tribunal Constitucional?", ["Por terceras partes cada tres años", "En su totalidad cada cuatro años", "Por mitades cada cinco años", "No se renuevan, son cargos fijos"], 0],
+            ["19. ¿Cuál de los siguientes colectivos NO propone candidatos para la composición del Tribunal Constitucional?", ["El Congreso de los Diputados", "El Senado", "El Consejo General del Poder Judicial", "Las Asambleas Legislativas de las CCAA"], 3],
+            ["20. ¿Qué mayoría se exige en el Congreso y en el Senado para proponer a los magistrados del Tribunal Constitucional?", ["Mayoría absoluta", "Mayoría simple", "Mayoría de 3/5 partes", "Mayoría de 2/3 partes"], 2],
+            ["21. Para ser nombrado miembro del Tribunal Constitucional se exige ser jurista de reconocida competencia con al menos:", ["10 años de ejercicio profesional", "15 años de ejercicio profesional", "20 años de ejercicio profesional", "5 años de ejercicio profesional"], 1],
+            ["22. ¿En qué Título de la Constitución se regula el procedimiento de Reforma Constitucional?", ["Título IX", "Título VIII", "Título X", "Título VII"], 2],
+            ["23. Según el art. 169 de la CE, ¿cuándo NO podrá iniciarse una reforma constitucional?", ["En tiempo de guerra o bajo estados de alarma, excepción o sitio", "Durante la celebración de elecciones municipales", "En los tres últimos meses de la legislatura", "Cuando el Gobierno se encuentre en funciones"], 0],
+            ["24. ¿Qué mayoría exige el procedimiento ordinario de reforma constitucional (art. 167) en cada Cámara?", ["Mayoría absoluta", "Mayoría de 3/5", "Mayoría de 2/3", "Mayoría simple"], 1],
+            ["25. En la reforma ordinaria de la CE, ¿cuándo se someterá la reforma a referéndum facultativo?", ["Cuando lo solicite una décima parte de los miembros de cualquiera de las Cámaras en un plazo de 15 días", "Siempre, es obligatorio", "Cuando lo decida el Rey", "Cuando lo solicite la mayoría absoluta del Congreso"], 0],
+            ["26. ¿Qué materias exigen el procedimiento agravado de reforma (art. 168)?", ["La revisión total o que afecte al Título Preliminar, Capítulo II Sección 1ª del Título I, o Título II", "Cualquier cambio que afecte al Título III o IV", "Exclusivamente las modificaciones relativas a la Unión Europea", "Las modificaciones del Título VIII de las Autonomías"], 0],
+            ["27. La reforma del artículo 13.2 de la CE aprobada en 1992 tuvo como objetivo adaptarla a:", ["La Convención de los Derechos de las Personas con Discapacidad", "El Tratado de Maastricht", "El Pacto de Estabilidad Presupuestaria europea", "La entrada de España en la OTAN"], 1],
+            ["28. La reforma constitucional efectuada en el año 2011 modificó el artículo 135 para incluir:", ["El voto pasivo de extranjeros en elecciones municipales", "El cambio de la denominación de los disminuidos", "Los principios de estabilidad presupuestaria y sostenibilidad financiera", "La paridad de género en las listas electorales"], 2],
+            ["29. La reforma del artículo 49 de la Constitución llevada a cabo en 2024 consistió en:", ["Adaptar la normativa tributaria", "Sustituir el término 'disminuidos' por 'personas con discapacidad'", "Eliminar la preferencia del varón en la sucesión", "Modificar la elección del Defensor del Pueblo"], 1],
+            ["30. ¿En cuál de las siguientes opciones se encuentra la capital del Estado español según el Título Preliminar?", ["En la ciudad de Barcelona", "En la ciudad de Madrid", "En la ciudad de Sevilla", "La Constitución no fija la capital de España"], 1],
+            ["31. ¿Cuál es la lengua española oficial del Estado según la CE?", ["El castellano", "El castellano junto con todas las lenguas autonómicas", "No se especifica ninguna en el Título Preliminar", "Exclusivamente el español e inglés"], 0],
+            ["32. ¿Qué bandera ondea en las instituciones públicas españolas junto a la de España en las Comunidades Autónomas?", ["Exclusivamente la de la Unión Europea", "La propia bandera de la Comunidad Autónoma si así lo reconoce su Estatuto", "Ninguna, la bandera de España es la única autorizada", "La bandera municipal correspondiente"], 1],
+            ["33. ¿Cuál es el marco económico dibujado por la Constitución Española en el artículo 38?", ["Economía comunista planificada", "Libertad de empresa en el marco de la economía de mercado", "Monopolio público total", "Economía de libre comercio sin intervención del Estado"], 1],
+            ["34. ¿Qué garantía de derechos fundamentales permite acudir al Tribunal Constitucional ante una vulneración de derechos básicos?", ["La cuestión de inconstitucionalidad", "El Recurso de Amparo", "El suplicatorio", "La moción de censura"], 1],
+            ["35. En la estructura dogmática de la Constitución se regulan principalmente:", ["La organización de los poderes del Estado", "Los principios rectores y derechos fundamentales de la ciudadanía", "Las competencias autonómicas", "La hacienda y los presupuestos"], 1],
+            ["36. ¿Qué Título de la Constitución Española regula a las Cortes Generales?", ["Titulo II", "Título III", "Título IV", "Título V"], 1],
+            ["37. ¿Cómo se denomina el sistema parlamentario español al estar formado por dos Cámaras?", ["Unicameral", "Bicameral", "Tricameral", "Mixto regional"], 1],
+            ["38. ¿Cuáles son las dos Cámaras que integran las Cortes Generales?", ["El Congreso de los Diputados y el Tribunal Constitucional", "El Congreso de los Diputados y el Senado", "El Consejo de Estado y el Senado", "El Gobierno y el Congreso"], 1],
+            ["39. ¿A quién representan las Cortes Generales según el artículo 66.1 de la CE?", ["Al pueblo español", "A los partidos políticos", "A las Comunidades Autónomas", "Al Rey"], 0],
+            ["40. ¿Cuál de las siguientes NO es una función principal de las Cortes Generales?", ["Ejercer la potestad legislativa del Estado", "Aprobar los Presupuestos Generales del Estado", "Dictar sentencias judiciales", "Controlar la acción del Gobierno"], 2],
+            ["41. ¿Cuál es el número actual fijado legalmente de miembros del Congreso de los Diputados?", ["300", "350", "400", "266"], 1],
+            ["42. ¿Cuál es la circunscripción electoral en las elecciones al Congreso de los Diputados?", ["El municipio", "La provincia", "La Comunidad Autónoma", "El Estado en su conjunto"], 1],
+            ["43. ¿Cuántos diputados le corresponden como mínimo a cada provincia en el Congreso?", ["1", "2", "4", "En función de su extensión territorial"], 1],
+            ["44. ¿Cuántos diputados eligen Ceuta y Melilla respectivamente para el Congreso?", ["2 cada una", "1 cada una", "3 cada una", "Ninguno, solo eligen senadores"], 1],
+            ["45. ¿Cuál es la duración del mandato (legislatura) de los Diputados y Senadores?", ["5 años", "4 años", "6 años", "3 años"], 1],
+            ["46. ¿Qué fórmula de representación proporcional se utiliza en España para repartir los escaños del Congreso?", ["Ley D'Hondt", "Sistema de mayoría relativa", "Sistema Hare", "Sistema Borda"], 0],
+            ["47. El Senado está definido en la Constitución como la Cámara de:", ["Representación popular directa", "Representación territorial", "Control judicial exclusivo", "Asesoramiento al Rey"], 1],
+            ["48. En las elecciones al Senado, ¿cuántos senadores se eligen de forma directa en cada provincia peninsular?", ["2", "4", "3", "Depende de la población"], 1],
+            ["49. ¿Cuántos senadores eligen las islas mayores (Gran Canaria, Mallorca y Tenerife)?", ["1", "3", "4", "2"], 1],
+            ["50. ¿Cómo eligen las Comunidades Autónomas a sus senadores designados?", ["Un senador y otro más por cada millón de habitantes de su territorio", "Dos senadores fijos por cada provincia de la Comunidad", "Cinico senadores fijos por cada Asamblea", "No eligen senadores"], 0],
+            ["51. ¿Qué prerrogativa parlamentaria garantiza que los diputados y senadores no respondan judicialmente por opiniones manifestadas en el ejercicio de funciones?", ["La inmunidad parlamentaria", "La inviolabilidad parlamentaria", "El aforamiento judicial", "La suplicatoria procesal"], 1],
+            ["52. Durante su mandato, ¿en qué único caso pueden ser detenidos los diputados y senadores según la CE?", ["Por orden del Presidente del Gobierno", "Por resolución de la Junta Electoral Central", "En caso de flagrante delito", "Por acumular sanciones administrativas"], 2],
+            ["53. ¿Qué órgano judicial es el único competente para inculpar o procesar a diputados y senadores (aforamiento)?", ["La Sala de lo Penal del Tribunal Supremo", "El Tribunal Constitucional", "La Audiencia Nacional", "El Tribunal Superior de Justicia de su Comunidad Autónoma"], 0],
+            ["54. ¿Qué autorización de la Cámara respectiva debe solicitarse para poder procesar a un parlamentario?", ["Moción de censura", "Cuestión de confianza", "Suplicatorio", "Recurso de inconstitucionalidad"], 2],
+            ["55. ¿Cuál de los siguientes cargos es incompatible con el puesto de Diputado del Congreso?", ["Portavoz de un grupo político", "Ser Senador al mismo tiempo", "Profesor de Universidad", "Titular de un derecho de sufragio activo"], 1],
+            ["56. ¿Cómo es el sistema de listas en las elecciones al Congreso de los Diputados?", ["Listas abiertas y desbloqueadas", "Listas cerradas y bloqueadas", "Voto directo por candidaturas individuales", "Sistema de preferencia ordinal"], 1],
+            ["57. ¿Quién ostenta la máxima representación y preside el Congreso de los Diputados?", ["El Presidente del Gobierno", "El Presidente del Tribunal Constitucional", "El Presidente del Congreso", "El Rey"], 2],
+            ["58. ¿Qué órgano rector del Congreso está formado por el Presidente, los Vicepresidentes y los Secretarios?", ["La Junta de Portavoces", "La Mesa del Congreso", "La Diputación Permanente", "La Comisión Constitucional"], 1],
+            ["59. ¿Qué órgano parlamentario se encarga de velar por los poderes de la Cámara cuando esta no está reunida o ha sido disuelta?", ["La Diputación Permanente", "El Pleno de la Cámara", "La Junta de Portavoces", "Las Comisiones Permanentes"], 0],
+            ["60. ¿Cuál es el número mínimo de miembros que integran la Diputación Permanente en cada Cámara?", ["15 miembros", "21 miembros", "35 miembros", "50 miembros"], 1],
+            ["61. Las iniciativas legislativas presentadas por el Gobierno ante las Cortes Generales reciben el nombre de:", ["Proposiciones de Ley", "Proyectos de Ley", "Decretos Legislativos", "Enmiendas a la totalidad"], 1],
+            ["62. Las iniciativas legislativas cuya tramitación se inicia a propuesta del Congreso, Senado, CCAA o ciudadanía se denominan:", ["Reales Decretos-Leyes", "Proposiciones de Ley", "Proyectos de Ley", "Reglamentos estatales"], 1],
+            ["63. Para que el Congreso pueda iniciar una Proposición de Ley a propuesta interna, ¿por cuántos diputados debe estar suscrita como mínimo?", ["5 diputados", "10 diputados", "15 diputados", "25 diputados"], 2],
+            ["64. Para que se inicie una Proposición de Ley en el Senado a iniciativa propia, ¿cuántos senadores deben suscribirla como mínimo?", ["15 senadores", "20 senadores", "25 senadores", "50 senadores"], 2],
+            ["65. ¿Cuántas firmas acreditadas se exigen para presentar una Iniciativa Legislativa Popular (ILP)?", ["100.000 firmas", "250.000 firmas", "500.000 firmas", "1.000.000 de firmas"], 2],
+            ["66. ¿Sobre qué materia SÍ se permite presentar una Iniciativa Legislativa Popular?", ["Materias propias de Ley Orgánica", "Materias de carácter tributario o internacional", "Regulación de la Administración de Justicia", "Prerrogativa de gracia (indultos)"], 0],
+            ["67. Una vez aprobado un proyecto o proposición de ley por el Congreso, ¿de qué plazo dispone el Senado para vetarlo o enmendarlo?", ["15 días", "1 mes", "2 meses", "6 meses"], 2],
+            ["68. En caso de que el Senado introduzca un veto a un texto legal, ¿qué mayoría exige el Congreso para levantar dicho veto de forma inmediata?", ["Mayoría simple", "Mayoría absoluta", "Mayoría de 3/5", "Mayoría de 2/3"], 1],
+            ["69. Transcurridos dos meses desde el veto del Senado, ¿qué mayoría basta en el Congreso para ratificar el texto original de la ley?", ["Mayoría absoluta", "Mayoría de 3/5", "Mayoría simple", "Unanimidad de la Mesa"], 2],
+            ["70. ¿Qué acto formal realiza el Rey respecto a las leyes aprobadas por las Cortes Generales en el plazo de 15 días?", ["Aprobarlas y ratificarlas", "Sancionarlas, promulgarlas y ordenar su publicación", "Revisarlas y vetarlas", "Someterlas al Tribunal Constitucional"], 1],
+            ["71. ¿En qué Título de la Constitución Española se regula el Poder Judicial?", ["Título IV", "Título V", "Título VI", "Título VII"], 2],
+            ["72. Según el artículo 117.1 de la CE, ¿de quién emana la justicia?", ["Del Rey", "Del Poder Legislativo", "Del pueblo", "De la Constitución"], 2],
+            ["73. ¿En nombre de quién se administra la justicia en España?", ["Del Presidente del Gobierno", "Del Rey", "Del pueblo español", "Del Consejo General del Poder Judicial"], 1],
+            ["74. ¿Cuál de las siguientes características NO define a los Jueces y Magistrados según el artículo 117.1 de la CE?", ["Independientes", "Sometidos a las directrices del Ejecutivo", "Inamovibles", "Responsables"], 1],
+            ["75. ¿Qué significa la garantía de inamovilidad de Jueces y Magistrados?", ["Que no pueden ser trasladados, suspendidos, separados ni jubilados sino por las causas previstas en la ley", "Que deben ejercer en el mismo juzgado durante toda su carrera", "Que no pueden ser juzgados por cometer delitos penales", "Que pueden cambiarse libremente de sede autonómica"], 0],
+            ["76. ¿Cuál es el órgano de gobierno del Poder Judicial en España?", ["El Tribunal Supremo", "El Ministerio de Justicia", "El Consejo General del Poder Judicial (CGPJ)", "El Tribunal Constitucional"], 2],
+            ["77. ¿Cuántos miembros (vocales más presidente) componen el Consejo General del Poder Judicial?", ["12", "20", "21", "25"], 2],
+            ["78. ¿Por qué período son nombrados los vocales del Consejo General del Poder Judicial?", ["4 años", "5 años", "9 años", "Indefinido"], 1],
+            ["79. ¿Cuántos vocales del CGPJ son propuestos por el Congreso de los Diputados y cuántos por el Senado?", ["10 el Congreso y 10 el Senado", "12 el Congreso y 8 el Senado", "15 el Congreso y 5 el Senado", "Todos son elegidos directamente por los jueces"], 0],
+            ["80. ¿Qué mayoría se requiere en el Congreso y el Senado para la elección de los vocales del CGPJ?", ["Mayoría simple", "Mayoría absoluta", "Mayoría de 3/5 partes", "Mayoría de 2/3 partes"], 2],
+            ["81. ¿Quién ostenta la Presidencia del Tribunal Supremo y del Consejo General del Poder Judicial?", ["La misma persona", "El Ministro de Justicia", "El Fiscal General del Estado", "Dos personas distintas elegidas por las Cortes"], 0],
+            ["82. ¿Cuál es el órgano jurisdiccional superior en todos los órdenes judiciales, salvo en materia de garantías constitucionales?", ["La Audiencia Nacional", "El Tribunal Superior de Justicia de Madrid", "El Tribunal Supremo", "El Consejo de Estado"], 2],
+            ["83. ¿En cuántas Salas jurisprudenciales se organiza el Tribunal Supremo?", ["3 salas", "4 salas", "5 salas", "6 salas"], 2],
+            ["84. ¿Cuál de los siguientes NO es uno de los cuatro órdenes jurisdiccionales ordinarios en España?", ["Civil", "Penal", "Mercantil-Electoral", "Contencioso-Administrativo"], 2],
+            ["85. ¿Qué órgano judicial tiene competencias específicas en todo el territorio nacional para juzgar delitos como terrorismo?", ["El Tribunal Superior de Justicia", "La Audiencia Nacional", "El Juzgado de lo Penal Provincial", "El Tribunal de Cuentas"], 1],
+            ["86. En la cúspide de la organización judicial dentro de cada Comunidad Autónoma se encuentra:", ["El Tribunal Superior de Justicia (TSJ)", "La Audiencia Provincial", "El Tribunal Contencioso Autonómico", "El Consejo Judicial de la Comunidad"], 0],
+            ["87. ¿Cuál es el ámbito territorial de actuación de las Audiencias Provinciales?", ["El Municipio", "El Partido Judicial", "La Provincia", "La Comunidad Autónoma"], 2],
+            ["88. Tras las reformas organizativas del PJ, los antiguos juzgados unipersonales se integran en:", ["Tribunales de Instancia", "Tribunales Comarcales", "Juzgados de Paz Centrales", "Secciones Constitucionales"], 0],
+            ["89. ¿Qué institución permite la participación ciudadana directa en la Administración de Justicia en procesos penales?", ["El Ministerio Fiscal", "El Tribunal del Jurado", "El Defensor del Pueblo", "La Acción Popular de Empresa"], 1],
+            ["90. ¿Cuál es la función principal del Ministerio Fiscal según el art. 124 de la CE?", ["Dictar sentencias y ejecutar lo juzgado", "Promover la acción de la justicia en defensa de la legalidad, derechos e interés público", "Dictar órdenes e instrucciones", "Gobernar a los Jueces"], 1],
+            ["91. ¿Por quién es nombrado el Fiscal General del Estado?", ["Por el Consejo General del Poder Judicial", "Por las Cortes Generales a propuesta del Senado", "Por el Rey, a propuesta del Gobierno, oído el CGPJ", "Por el Presidente del Tribunal Supremo"], 2],
+            ["92. ¿Qué cuerpo al servicio de la Administración de Justicia tiene encomendada la fe pública judicial y la ordenación del proceso?", ["Los Médicos Forenses", "Los Letrados de la Administración de Justicia (antes Secretarios Judiciales)", "Los Agentes de la Policía Judicial", "Los Gestores Procesales"], 1],
+            ["93. ¿Qué principio rige la estructura y actuación del Ministerio Fiscal?", ["Unidad de actuación y dependencia jerárquica", "Autonomía absoluta de cada fiscal provincial", "Elección popular directa", "Inamovilidad territorial rígida"], 0],
+            ["94. ¿Cuál de las siguientes actividades SÍ es compatible con la función de Juez o Magistrado en activo?", ["El desempeño de cargos públicos electivos", "El empleo en partidos políticos o sindicatos", "La docencia o investigación jurídica, y producción literaria", "El ejercicio del comercio y abogacía"], 2],
+            ["95. Los daños causados por error judicial o por el funcionamiento anormal de la Administración de Justicia darán derecho a:", ["Una indemnización a cargo del Estado, conforme a la ley", "La inhabilitación inmediata del juez sancionado", "La repetición automática", "Ningún tipo de reparación económica"], 0],
+            ["96. ¿En qué Título de la Constitución se regulan el Gobierno y la Administración?", ["Título III", "Título IV", "Título V", "Título VI"], 1],
+            ["97. Según el artículo 97 de la CE, ¿a quién corresponde dirigir la política interior y exterior, la Admón. civil y militar y la defensa?", ["Al Rey", "A las Cortes Generales", "Al Gobierno", "Al Presidente del Congreso"], 2],
+            ["98. ¿Qué potestad normativa específica reconoce la CE al Gobierno en el artículo 97?", ["La potestad legislativa ordinaria", "La potestad reglamentaria", "La potestad constituyente", "La potestad judicial supletoria"], 1],
+            ["99. ¿Qué miembros integran imprescindiblemente el Gobierno según la Constitución?", ["El Presidente, los Vicepresidentes en su caso, y los Ministros", "El Presidente, los Secretarios de Estado y el Rey", "El Presidente, los Ministros y los Delegados del Gobierno", "El Presidente y los Portavoces"], 0],
+            ["100. En el procedimiento de investidura, ¿quién propone al candidato a Presidente del Gobierno?", ["El Presidente del Congreso", "El Rey, previa consulta con representantes de los grupos políticos", "La Mesa del Senado", "La Junta Electoral Central"], 1],
+            ["101. En la primera votación de investidura, ¿qué mayoría requiere el candidato para ser elegido Presidente del Gobierno?", ["Mayoría simple", "Mayoría absoluta", "Mayoría de 3/5 partes", "Mayoría de 2/3 partes"], 1],
+            ["102. Si no obtiene mayoría absoluta, se somete a nueva votación 48 horas después, requiriendo:", ["Mayoría simple", "Mayoría absoluta", "Unanimidad", "Mayoría de 3/5 partes"], 0],
+            ["103. Si transcurridos dos meses ningún candidato obtiene la confianza, ¿qué medida adopta el Rey?", ["Nombra a un interino", "Disuelve ambas Cámaras y convoca nuevas elecciones con refrendo del Presi. del Congreso", "Asume el Ejecutivo", "Prorroga 2 años"], 1],
+            ["104. ¿Quién nombra y separa a los Ministros y Vicepresidentes del Gobierno?", ["El Presidente del Congreso", "El Congreso de los Diputados", "El Rey, a propuesta exclusiva del Presidente del Gobierno", "El Pleno del Senado"], 2],
+            ["105. ¿En qué principio se fundamenta que sus miembros deliberen a puerta cerrada y respondan solidariamente?", ["Principio Presidencial", "Principio Departamental", "Principio de Colegialidad", "Principio de Transparencia"], 2],
+            ["106. ¿Cómo se llama el órgano colegiado del Gobierno que se reúne semanalmente?", ["Comisión General", "Consejo de Ministros", "Comisión Delegada", "Consejo de Estado"], 1],
+            ["107. ¿Qué órgano supremo consultivo del Gobierno vela por el respeto a la Constitución y al ordenamiento jurídico?", ["El CGPJ", "El Consejo de Estado", "El Tribunal de Cuentas", "La Comisión de Subsecretarios"], 1],
+            ["108. ¿Qué instrumento parlamentario diario permite a los diputados interrogar al Ejecutivo con un breve intercambio dialéctico?", ["Las Preguntas", "Las Interpelaciones", "Las Menciones", "La Cuestión de confianza"], 0],
+            ["109. ¿Quién puede plantear una Cuestión de Confianza ante el Congreso de los Diputados?", ["Un grupo de la oposición", "La décima parte de diputados", "El Presidente del Gobierno, previa deliberación del Consejo de Ministros", "El Rey a solicitud del Senado"], 2],
+            ["110. Para que la Cuestión de Confianza se entienda otorgada, ¿qué mayoría de votos se requiere?", ["Mayoría de 3/5", "Mayoría absoluta", "Mayoría simple", "Mayoría de 2/3"], 2],
+            ["111. ¿Qué instrumento permite al Congreso exigir la responsabilidad política al Gobierno e intentar su destitución?", ["Cuestión de Confianza", "La Moción de Censura", "Recurso de Inconstitucionalidad", "Solicitud de Dimisión"], 1],
+            ["112. ¿Por cuántos Diputados como mínimo debe estar firmada una Moción de Censura para ser presentada?", ["Por la décima parte de los Diputados (35)", "Por la quinta parte (70)", "Mayoría absoluta", "Por 50"], 0],
+            ["113. ¿Qué requisito obligatorio debe incluir la Moción de Censura para ser 'constructiva'?", ["Fecha exacta de elecciones", "Un candidato a la Presidencia del Gobierno que haya aceptado la candidatura", "Voto favorable del Senado", "Informe del TC"], 1],
+            ["114. ¿Qué mayoría se exige para que una Moción de Censura sea aprobada por el Congreso?", ["Mayoría simple", "Mayoría de 2/3", "Mayoría absoluta de los miembros del Congreso", "Mayoría de 3/5"], 2],
+            ["115. Si la Moción de Censura no resulta aprobada, sus signatarios no podrán presentar otra durante:", ["El mismo período de sesiones", "Toda la legislatura", "Un año natural", "Seis meses"], 0],
+            ["116. ¿Cuándo se considera que un Gobierno entra 'en funciones'?", ["Ausencia del Presidente", "Tras celebración de elecciones, pérdida confianza, dimisión o fallecimiento", "Vacaciones de las Cortes", "Prórroga de Presupuestos"], 1],
+            ["117. ¿Qué norma con rango de ley puede dictar el Gobierno en caso de extraordinaria y urgente necesidad?", ["Ley Orgánica", "Real Decreto-Ley", "Real Decreto Legislativo", "Reglamento"], 1],
+            ["118. Los Reales Decretos-Leyes deben ser sometidos a debate y votación en el Congreso en el plazo máximo de:", ["15 días", "30 días", "60 días", "3 meses"], 1],
+            ["119. ¿Qué materia tiene expresamente prohibida regular un Real Decreto-Ley?", ["Las instituciones básicas del Estado, derechos Título I, régimen CCAA y derecho electoral", "Presupuesto ordinario", "Fijación SMI", "Estructura orgánica"], 0],
+            ["120. ¿Cómo se denomina la norma con rango de ley emitida por el Gobierno cuando recibe delegación de las Cortes?", ["Ley de Bases", "Real Decreto Legislativo", "Orden Ministerial", "Reglamento Ejecutivo"], 1],
+            ["121. La delegación legislativa para elaborar un Texto Articulado se otorga al Gobierno mediante una:", ["Ley de Bases", "Ley Refundidora", "Ley Ordinaria", "Proposición no de Ley"], 0],
+            ["122. La delegación legislativa para unificar varios textos legales en un Texto Refundido se otorga mediante una:", ["Ley Orgánica", "Ley Ordinaria", "Ley de Bases", "Moción"], 1],
+            ["123. ¿Qué figura representa al Gobierno Central en el territorio de cada Comunidad Autónoma?", ["El Gobernador Civil", "El Delegado del Gobierno", "El Subdelegado del Gobierno", "El Presidente CCAA"], 1],
+            ["124. ¿Por quién son nombrados los Delegados del Gobierno en las CCAA?", ["El Rey a propuesta del Presi", "Por el Consejo de Ministros mediante Real Decreto, a propuesta del Presidente", "Parlamento CCAA", "Ministro de Justicia"], 1],
+            ["125. ¿Quién nombra a los Subdelegados del Gobierno en cada Provincia?", ["El Presidente", "El Delegado del Gobierno en la Comunidad Autónoma, mediante libre designación", "Consejo de Ministros", "Diputación Provincial"], 1],
+            ["126. ¿En qué Título de la Constitución Española se regula la Organización Territorial del Estado?", ["Título VII", "Título VIII", "Título IX", "Título X"], 1],
+            ["127. Según el artículo 137 de la CE, el Estado se organiza territorialmente en:", ["Municipios, Provincias y Comunidades Autónomas", "Comarcas, Diputaciones y Regiones", "Municipios, Partidos y Estados", "Distritos y Cantones"], 0],
+            ["128. ¿Qué principio constitucional garantiza el equilibrio económico entre las diversas partes del territorio español?", ["Principio de Solidaridad", "Principio de Eficiencia", "Principio de Subsidariedad", "Principio de Competencia Exclusiva"], 0],
+            ["129. ¿Qué entidad goza de personalidad jurídica plena y constituye la entidad local básica de la organización territorial?", ["La Comarca", "El Municipio", "El Partido Judicial", "El Área Metropolitana"], 1],
+            ["130. El gobierno y la administración de los Municipios corresponde a:", ["Alcaldes y Consejeros", "Los Ayuntamientos, integrados por el Alcalde y los Concejales", "Diputaciones Provinciales", "Mancomunidades"], 1],
+            ["131. ¿Cómo son elegidos los Concejales de un Ayuntamiento?", ["Por los vecinos del municipio mediante sufragio universal, igual, libre, directo y secreto", "Por designación del Delegado", "Sorteo", "Elección indirecta"], 0],
+            ["132. ¿Cómo es elegido el Alcalde en los municipios ordinarios?", ["Directamente por urna independiente", "Por los Concejales o por los vecinos según el sistema electoral aplicable", "Por el Presidente CCAA", "Ministerio"], 1],
+            ["133. La Provincia es entidad local. Su alteración requiere:", ["Real Decreto", "Ley Orgánica aprobada por las Cortes Generales", "Acuerdo Asamblea CCAA", "Orden Ministerial"], 1],
+            ["134. El gobierno y la administración autónoma de las Provincias está encomendado a:", ["Ayuntamientos capital", "Las Diputaciones u otras Corporaciones de carácter representativo", "Subdelegaciones", "TSJ"], 1],
+            ["135. En los archipiélagos, la administración propia de las islas en Canarias corresponde a:", ["Consejos Insulares", "Los Cabildos", "Diputaciones Insulares", "Mancomunidades"], 1],
+            ["136. En el archipiélago balear, la administración propia de cada isla corresponde a:", ["Los Cabildos", "Los Consejos Insulares (Consells Insulars)", "Diputaciones Balearicas", "Veguerías"], 1],
+            ["137. ¿Qué norma institucional básica regula la organización y competencias de cada Comunidad Autónoma?", ["Ley de Autonomía", "El Estatuto de Autonomía", "Reglamento Asamblea", "Carta Puebla"], 1],
+            ["138. ¿Qué rango normativo tiene la ley estatal que aprueba o reforma un Estatuto de Autonomía?", ["Ley Ordinaria", "Ley Orgánica", "Real Decreto Legislativo", "Ley Marco"], 1],
+            ["139. ¿Cuál es el procedimiento de acceso a la autonomía (vía rápida) regulado para las regiones históricas en la CE?", ["Vía del artículo 143", "Vía del artículo 151", "Disp. Transitoria 1ª", "Disp. Adicional 3ª"], 1],
+            ["140. ¿Cuál de los siguientes elementos NO forma parte obligatoria de la estructura institucional básica de una CCAA (art. 152)?", ["Asamblea Legislativa", "Consejo de Gobierno", "Presidente", "Un Tribunal de Cuentas Autonómico de elección directa"], 3],
+            ["141. ¿Ante quién responde políticamente el Presidente de una Comunidad Autónoma?", ["Congreso de Diputados", "Ante la Asamblea Legislativa de la Comunidad Autónoma", "Delegado del Gobierno", "Tribunal Constitucional"], 1],
+            ["142. ¿Qué artículo de la Constitución recoge la enumeración de competencias que pueden asumir las Comunidades Autónomas?", ["Artículo 148", "Artículo 149", "Artículo 150", "Artículo 153"], 0],
+            ["143. ¿Qué artículo de la Constitución establece las materias que son competencia EXCLUSIVA del Estado?", ["Artículo 148", "Artículo 149", "Artículo 150", "Artículo 155"], 1],
+            ["144. Si una CCAA no asume una competencia que no es exclusiva del Estado en su Estatuto, ¿a quién corresponde la competencia?", ["A los Municipios", "Al Estado", "Queda vacante", "Se somete a arbitraje"], 1],
+            ["145. En caso de conflicto entre normas del Estado y CCAA en materias no exclusivas, la norma estatal prevalecerá:", ["Siempre y sin excepción", "En todo lo que no esté atribuido a la exclusiva competencia autonómica", "Solo si aprueba el Senado", "Nunca prevalece"], 1],
+            ["146. El Derecho estatal será, respecto al Derecho de las Comunidades Autónomas:", ["Nulo de pleno derecho", "Supletorio", "Preferente en todo momento", "Vinculante con ratificación"], 1],
+            ["147. ¿Qué instrumento constitucional permite atribuir a las CCAA la facultad de dictar normas en materias estatales?", ["Ley Marco", "Ley Orgánica de Transferencia", "Ley de Armonización", "Real Decreto-Ley"], 0],
+            ["148. ¿Qué tipo de Ley permite al Estado transferir/delegar en CCAA facultades correspondientes a materias de titularidad estatal?", ["Ley Marco", "Ley Orgánica de Transferencia o Delegación", "Ley de Armonización", "Ley de Bases"], 1],
+            ["149. Las Leyes de Armonización dictadas por las Cortes Generales requieren la apreciación previa de necesidad por:", ["Mayoría simple", "Mayoría absoluta de cada Cámara", "Mayoría de 3/5", "Unanimidad"], 1],
+            ["150. ¿Qué mecanismo (art. 155 CE) permite al Gobierno obligar a una CCAA al cumplimiento forzoso de obligaciones?", ["Intervención CGPJ", "Requerimiento al Presidente autonómico y aprobación por mayoría absoluta del Senado", "Suspensión Congreso", "Estado de Excepción"], 1],
+            ["151. (Bis) ¿Cómo se califica el principio constitucional en el que el Estado busca de forma activa la igualdad social y económica?", ["Estado Democrático", "Estado Social", "Estado Autonómico", "Estado de Derecho"], 1],
+            ["152. ¿Cuál de las opciones describe el principio de 'desconcentración' en la Administración Pública?", ["Transferencia competencias Estado a CCAA", "La transferencia de titularidad y ejercicio de competencias de un órgano superior a otro inferior dentro de la misma entidad", "Anulación judicial", "Privatización servicio"], 1],
+            ["153. Dentro del Poder Ejecutivo, ¿cuál es el rango que ostentan los Delegados del Gobierno en las CCAA?", ["Subdirector General", "Secretario de Estado", "Rango de Subsecretario", "Ministro"], 2],
+            ["154. ¿A qué órgano de la Administración General del Estado corresponde la dirección y coordinación de la AGE en una CCAA?", ["Subdelegación", "A la Delegación del Gobierno", "Presidencia CCAA", "Consejo de Gobierno"], 1],
+            ["155. ¿Quién es el encargado de nombrar y designar directamente a los Subdelegados del Gobierno en cada Provincia?", ["Rey", "Presidente del Gobierno", "El Delegado del Gobierno en la Comunidad Autónoma", "Ministro Interior"], 2],
+            ["156. ¿Qué categoría administrativa tienen los Subdelegados del Gobierno en las provincias?", ["Secretario de Estado", "Categoría de Subdirector General", "Subsecretario", "Secretario General Técnico"], 1],
+            ["157. En la Administración Territorial en los archipiélagos, ¿qué figura equivale al Subdelegado del Gobierno provincial?", ["Gobernador Insular", "El Director Insular", "Consejero de Cabildo", "Presidente Consejo"], 1],
+            ["158. ¿Cuál de las siguientes competencias corresponde a los Subdelegados del Gobierno a nivel provincial?", ["Aprobar Estatutos", "Dirigir y coordinar la protección civil en la provincia", "Nombramiento Ministros", "Reformar Constitución"], 1],
+            ["159. ¿Qué institución u organismo se encarga de promover la cooperación internacional para el desarrollo en el exterior?", ["Instituto Cervantes", "La Agencia Española de Cooperación Internacional (AECID)", "ICEX", "AEMET"], 1],
+            ["160. ¿Quién ostenta la máxima representación de España en las misiones diplomáticas permanentes ante otros Estados?", ["Cónsul General", "El Embajador Extraordinario", "Secretario de Comercio", "Director Oficina Consular"], 1],
+            ["161. Dentro de la Administración del Estado en el exterior, ¿qué organismo promociona la lengua y cultura española?", ["ICEX", "AECID", "Instituto Cervantes", "AENA"], 2],
+            ["162. ¿Qué organismo público representa institucionalmente a España para promover la internacionalización de empresas españolas?", ["El ICEX", "SEPE", "AEMET", "UNED"], 0],
+            ["163. ¿A qué tipología de Organismos Públicos pertenece el Servicio Público de Empleo Estatal (SEPE)?", ["Entidad Pública Empresarial", "Organismo Autónomo", "Agencia Estatal", "Sociedad Mercantil Estatal"], 1],
+            ["164. ¿Cuál es la función principal del Servicio Público de Empleo Estatal (SEPE)?", ["Recaudación impuestos", "Desarrollar política de empleo, gestionar prestaciones por desempleo y fomentar formación", "Fabricar papel moneda", "Tráfico aéreo"], 1],
+            ["165. ¿Qué tipo de entidad pública es la Fábrica Nacional de Moneda y Timbre (FNMT)?", ["Organismo Autónomo", "Entidad Pública Empresarial", "Autoridad Administrativa Independiente", "Fundación Sector Público"], 1],
+            ["166. ¿Qué organismo actúa como Agencia Estatal dentro del ámbito público regulado por el Estado?", ["La Agencia Estatal de Meteorología (AEMET)", "SEPE", "AENA", "UNED"], 0],
+            ["167. ¿A qué categoría pertenece la Agencia Española de Protección de Datos (AEPD)?", ["Organismo Autónomo", "Autoridad Administrativa Independiente", "Consorcio Estatal", "Entidad Pública Empresarial"], 1],
+            ["168. ¿Cuál de las siguientes empresas o entidades es clasificada como 'Sociedad Mercantil Estatal'?", ["AENA", "AEMET", "SEPE", "UNED"], 0],
+            ["169. ¿Qué tipo de entidad es la Universidad Nacional de Educación a Distancia (UNED)?", ["Universidad pública no transferida", "Agencia Estatal", "Entidad Empresarial", "Fundación Pública"], 0],
+            ["170. ¿Cómo se clasifica el Consorcio de Compensación de Seguros dentro de la estructura de entes públicos?", ["Agencia Estatal", "Consorcio", "Sociedad Mercantil", "Organismo Autónomo"], 1],
+            ["171. Dentro de un Ministerio, ¿cómo se dividen jerárquicamente sus órganos de trabajo (básico)?", ["En Ministros, Secretarios de Estado, Subsecretarios, Directores Generales y Subdirectores Generales", "Diputados, Senadores...", "Magistrados, Jueces...", "Comisiones..."], 0],
+            ["172. ¿Cuál de los siguientes cargos en un Ministerio está clasificado como Órgano Superior?", ["Director General", "Subdirector General", "El Secretario de Estado", "Subsecretario"], 2],
+            ["173. ¿Cuál de los siguientes cargos administrativos dentro de un Ministerio se considera un Órgano Directivo?", ["Ministro", "Secretario de Estado", "El Subsecretario", "Presidente"], 2],
+            ["174. ¿Qué órgano colegiado integrado por Sec. Estado y Subsecretarios examina los asuntos para el Consejo de Ministros?", ["Gabinete de Presidencia", "La Comisión General de Secretarios de Estado y Subsecretarios", "Consejo de Estado", "Comisión Delegada"], 1],
+            ["175. ¿Qué función realizan los 'Gabinetes' dentro de los Ministerios y la Presidencia del Gobierno?", ["Administrar justicia", "Ofrecer asesoramiento especial y apoyo político y técnico", "Ejercer potestad", "Promulgar leyes"], 1],
+            ["176. ¿Cuál es la función principal del Consejo de Estado como órgano consultivo del Ejecutivo?", ["Sustituir al Congreso", "Velar por la observancia de la Constitución y del resto del ordenamiento jurídico", "Aprobar Presupuestos", "Convocar elecciones"], 1]
+        ];
+
+        const TOTAL_Q = 50;
+        const MIN_PASS = 26; // Más de 25
+        
+        let testSet = [];
+        let currIdx = 0;
+        let cCount = 0;
+        let wCount = 0;
+        let ansLock = false;
+
+        function shuffle(arr) {
+            let copy = [...arr];
+            for (let i = copy.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [copy[i], copy[j]] = [copy[j], copy[i]];
+            }
+            return copy;
+        }
+
+        function startExam() {
+            testSet = shuffle(DB).slice(0, TOTAL_Q);
+            currIdx = 0; cCount = 0; wCount = 0;
+            
+            updateScores();
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.replace('flex', 'hidden');
+            document.getElementById('exam-screen').classList.replace('hidden', 'flex');
+            
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            ansLock = false;
+            const q = testSet[currIdx];
+            
+            document.getElementById('q-counter').innerText = `${currIdx + 1} / ${TOTAL_Q}`;
+            document.getElementById('q-text').innerText = q[0];
+            
+            const btnBox = document.getElementById('options-box');
+            btnBox.innerHTML = '';
+            
+            const nBtn = document.getElementById('next-btn');
+            nBtn.disabled = true;
+            nBtn.className = "w-full bg-gray-200 text-gray-400 font-bold py-4 px-6 rounded-2xl text-lg transition duration-200";
+
+            q[1].forEach((optText, i) => {
+                const b = document.createElement('button');
+                b.className = 'w-full text-left p-4 rounded-xl bg-white font-semibold text-gray-700 hover:border-blue-400 hover:bg-blue-50 option-btn flex justify-between items-center shadow-sm';
+                b.innerHTML = `<span>${optText}</span><div class="chk w-6 h-6 rounded-full border-2 border-gray-300 flex shrink-0 items-center justify-center"></div>`;
+                b.onclick = () => selectOpt(i, b);
+                btnBox.appendChild(b);
+            });
+        }
+
+        function selectOpt(sIdx, clkBtn) {
+            if (ansLock) return;
+            ansLock = true;
+
+            const trueAns = testSet[currIdx][2];
+            const isCorrect = (sIdx === trueAns);
+            const allBtn = document.getElementById('options-box').querySelectorAll('button');
+
+            allBtn.forEach((b, i) => {
+                b.classList.add('disabled');
+                b.classList.remove('hover:border-blue-400', 'hover:bg-blue-50');
+                let chk = b.querySelector('.chk');
+                
+                if (i === trueAns) {
+                    b.classList.add('correct-ans');
+                    chk.classList.replace('border-gray-300', 'border-transparent');
+                    chk.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>';
+                } else if (i === sIdx && !isCorrect) {
+                    b.classList.add('wrong-ans');
+                    chk.classList.replace('border-gray-300', 'border-transparent');
+                    chk.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"></path></svg>';
+                }
+            });
+
+            isCorrect ? cCount++ : wCount++;
+            updateScores();
+
+            const nBtn = document.getElementById('next-btn');
+            nBtn.disabled = false;
+            nBtn.className = "w-full bg-blue-600 text-white font-bold py-4 px-6 rounded-2xl text-lg hover:bg-blue-700 shadow-md transition duration-200 transform hover:-translate-y-0.5 active:translate-y-0";
+            nBtn.innerText = (currIdx === TOTAL_Q - 1) ? 'Ver Resultados' : 'Siguiente Pregunta';
+        }
+
+        function nextQ() {
+            if (currIdx < TOTAL_Q - 1) {
+                currIdx++;
+                loadQuestion();
+                document.getElementById('exam-screen').querySelector('main').scrollTop = 0;
+            } else showRes();
+        }
+
+        function updateScores() {
+            document.getElementById('score-c').innerText = cCount;
+            document.getElementById('score-w').innerText = wCount;
+        }
+
+        function showRes() {
+            document.getElementById('exam-screen').classList.replace('flex', 'hidden');
+            document.getElementById('result-screen').classList.replace('hidden', 'flex');
+
+            const isApto = cCount >= MIN_PASS;
+            const t = document.getElementById('res-title');
+            
+            document.getElementById('res-c').innerText = cCount;
+            document.getElementById('res-w').innerText = wCount;
+
+            if (isApto) {
+                t.innerText = 'APTO'; t.className = 'text-5xl font-black mb-1 tracking-tight text-green-500';
+                document.getElementById('res-msg').innerText = `¡Enhorabuena! Has superado la prueba (Mínimo: ${MIN_PASS})`;
+                document.getElementById('res-icon').innerHTML = '<div class="bg-green-100 rounded-full p-5 mb-2"><svg class="w-16 h-16 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>';
+            } else {
+                t.innerText = 'NO APTO'; t.className = 'text-5xl font-black mb-1 tracking-tight text-red-500';
+                document.getElementById('res-msg').innerText = `Necesitas ${MIN_PASS} aciertos para aprobar. ¡Sigue repasando!`;
+                document.getElementById('res-icon').innerHTML = '<div class="bg-red-100 rounded-full p-5 mb-2"><svg class="w-16 h-16 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></div>';
+            }
+        }
+    </script>
+</body>
+</html>
